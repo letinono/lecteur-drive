@@ -40,7 +40,8 @@ En mode « Test », Google redemande une connexion environ **tous les 7 jours** 
 - **L'app ne montre et ne lit que ce dossier.** Précision honnête : Google ne sait pas limiter une autorisation à un seul dossier ; le jeton garde donc la permission « lecture seule du Drive » et la restriction est appliquée par l'app (le code est public et vérifiable).
 - Touche une piste : la file d'attente est le dossier affiché, à partir de cette piste. « ▶ Lire le dossier » lit le dossier et ses sous-dossiers ; « 🔀 Aléatoire » fait pareil dans le désordre.
 - Touche le mini-lecteur en bas pour ouvrir le lecteur plein écran (progression, file d'attente, aléatoire, répétition).
-- La roue dentée ouvre les réglages : diagnostic, actualisation des dossiers, déconnexion.
+- La roue dentée ouvre les réglages : **choix du style**, diagnostic, actualisation des dossiers, déconnexion.
+- **Styles** : « Winamp » (par défaut : fenêtres biseautées, écran LCD vert, temps en gros chiffres, titre défilant, spectre animé, playlist) et « Apple Music » (grands titres, cartes arrondies, accent rouge, mini-lecteur translucide). Le choix est mémorisé sur l'iPhone. Le clair/sombre automatique est géré dans les deux styles. Le spectre Winamp est décoratif : un vrai analyseur audio (Web Audio) casserait la lecture en arrière-plan sur iOS.
 
 ## 5. À vérifier sur ton iPhone (ce que les tests ne peuvent pas couvrir)
 
@@ -56,7 +57,7 @@ Les tests automatiques tournent sur Chromium avec un profil d'iPhone et un faux 
 8. [ ] Aléatoire, répétition (tout / une piste), « Lire le dossier » avec sous-dossiers.
 9. [ ] Fermer complètement l'app puis la rouvrir : dernière piste et position retrouvées (lecture à la demande).
 10. [ ] Après plus d'1 h d'usage : le jeton se renouvelle seul, ou le bandeau « Reconnecter » apparaît sans couper la piste en cours.
-11. [ ] Mode sombre (Réglages iOS → Affichage) : l'interface suit automatiquement.
+11. [ ] Mode sombre (Réglages iOS → Affichage) : l'interface suit automatiquement, dans les deux styles ; le changement de style (roue dentée) s'applique tout de suite et reste après fermeture de l'app.
 12. [ ] Fichiers de plus de 30 Mo (le plus gros connu : 29 Mo) : démarrage acceptable en 4G.
 
 ## Comment ça marche (choix techniques)
@@ -71,6 +72,12 @@ Les tests automatiques tournent sur Chromium avec un profil d'iPhone et un faux 
 
 Piste retenue : stocker les MP3 téléchargés comme *Blob* dans **IndexedDB** (clé = identifiant du fichier Drive). Un `CacheSource` serait interrogé avant Drive et le lecteur continuerait de passer par `getBlob()`. IndexedDB est préférée à la Cache API : elle gère simplement les blobs, la suppression par album et l'inventaire.
 Limites iOS à garder en tête : quota de stockage variable selon l'espace libre de l'iPhone ; le système peut évincer des données sous pression de stockage (demander `navigator.storage.persist()`) ; l'éviction après 7 jours d'inactivité concerne Safari, pas une app installée sur l'écran d'accueil ; il faudra afficher l'espace utilisé et permettre de supprimer un album.
+
+## Ajouter un style
+
+1. Ajoute une entrée dans `src/theme.js` (`THEMES`) et dans le petit script de `index.html`.
+2. Crée `src/styles/<nom>.css` dont **toutes** les règles commencent par `html[data-theme="<nom>"]` (voir `apple.css` comme modèle) et importe-le dans `src/main.js`.
+3. Les éléments à voir selon le style portent les classes `only-winamp` / `only-apple`.
 
 ## Développement
 

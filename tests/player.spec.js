@@ -15,7 +15,7 @@ test('connexion : racine « Musique » retrouvée par son nom, tri naturel, pas 
   await expect(items.nth(1)).toContainText('Album B');
   await expect(items.nth(2)).toContainText('2 - deux');
   await expect(items.nth(3)).toContainText('10 - dix');
-  await expect(page.getByRole('button', { name: '⬆ Parent' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /parent/i })).toHaveCount(0);
   expect(g.authHeaders[0]).toBe('Bearer tok1');
   // le jeton est envoyé en en-tête, jamais dans l'URL
   expect(g.listCalls).not.toContain('root');
@@ -36,7 +36,7 @@ test('navigation dans un sous-dossier, fil d\'Ariane, retour, chemin mémorisé'
   await expect(page.locator('.list li').first()).toContainText('01 Première');
   await page.reload();
   await expect(page.locator('.crumbs')).toContainText('Album B'); // rouvert au même endroit
-  await page.getByRole('button', { name: '⬆ Parent' }).click();
+  await page.getByRole('button', { name: /parent/i }).click();
   await expect(page.locator('.list li')).toHaveCount(4);
 });
 
@@ -84,7 +84,7 @@ test('enchaînement automatique à la fin d\'une piste', async ({ page }) => {
 test('lecteur plein écran : file d\'attente, répétition, aléatoire, saut', async ({ page }) => {
   await mockGoogle(page);
   await login(page);
-  await page.getByRole('button', { name: '▶ Lire le dossier' }).click(); // récursif : 2 + 2 + 1 pistes... ordre : pistes du dossier puis sous-dossiers
+  await page.getByRole('button', { name: /lire le dossier/i }).click(); // récursif : 2 + 2 + 1 pistes... ordre : pistes du dossier puis sous-dossiers
   await expect(title(page)).toHaveText('2 - deux');
   await page.locator('#mini .info').click();
   const queue = page.locator('#sheet .list li');
@@ -105,10 +105,10 @@ test('lecteur plein écran : file d\'attente, répétition, aléatoire, saut', a
   await rep.click(); await expect(rep).toHaveAttribute('aria-label', /une piste/);
   await rep.click(); await expect(rep).toHaveAttribute('aria-label', /désactivée/);
   await rep.click(); // all : le suivant de la dernière piste reboucle
-  await page.locator('#sheet [data-pl="next"]').click(); // dernière piste -> reboucle
+  await page.locator('#sheet [data-pl="next"]:visible').click(); // dernière piste -> reboucle
   await expect(page.locator('#sheet .title')).toHaveText('2 - deux');
   await queue.nth(4).locator('button').click();
-  await page.locator('#sheet [data-pl="next"]').click();
+  await page.locator('#sheet [data-pl="next"]:visible').click();
   await expect(page.locator('#sheet .title')).toHaveText('2 - deux');
 
   // aléatoire : la piste courante reste en tête de file, mêmes pistes
@@ -149,9 +149,33 @@ test('reprise de la dernière piste et de la position à la réouverture', async
 test('mémoire : les anciennes pistes sont libérées', async ({ page }) => {
   await mockGoogle(page);
   await login(page);
-  await page.getByRole('button', { name: '▶ Lire le dossier' }).click();
+  await page.getByRole('button', { name: /lire le dossier/i }).click();
   await expect(title(page)).toHaveText('2 - deux');
   for (let i = 0; i < 4; i++) await page.locator('#mini [data-pl="next"]').click();
   await expect(title(page)).toHaveText('02 Seconde');
   await expect.poll(() => page.evaluate(() => window.__revoked)).toBeGreaterThan(0);
+});
+
+test('menu des styles : Winamp par défaut, Apple Music au choix, choix mémorisé', async ({ page }) => {
+  await mockGoogle(page);
+  await login(page);
+  const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
+  expect(await theme()).toBe('winamp');
+  await page.getByRole('button', { name: 'Réglages' }).click();
+  await page.getByRole('button', { name: 'Apple Music' }).click();
+  expect(await theme()).toBe('apple');
+  await page.reload();
+  expect(await theme()).toBe('apple'); // mémorisé
+  // le lecteur fonctionne dans ce style : un seul bouton lecture/pause visible, les commandes Winamp sont masquées
+  await page.locator('[data-track]').first().click();
+  await page.locator('#mini .info').click();
+  await expect(page.locator('#sheet [data-pl="toggle"]:visible')).toBeVisible();
+  await expect(page.locator('#sheet [data-pl="stop"]')).toBeHidden();
+  await page.locator('#sheet [data-pl="toggle"]:visible').click();
+  await expect.poll(() => page.evaluate(() => document.querySelector('audio').paused)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
+  await page.locator('#sheet [data-pl="close"]').click();
+  await page.getByRole('button', { name: 'Réglages' }).click();
+  await page.getByRole('button', { name: 'Winamp' }).click();
+  expect(await theme()).toBe('winamp');
 });

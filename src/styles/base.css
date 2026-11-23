@@ -1,0 +1,31 @@
+/* Structure commune à tous les styles. Les couleurs et formes sont dans winamp.css / apple.css. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root { --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px); }
+html, body { margin: 0; touch-action: manipulation; }
+body { padding-top: var(--safe-t); min-height: 100dvh; }
+#app { max-width: 640px; margin: 0 auto; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; align-items: center; }
+.center { text-align: center; }
+
+/* Éléments propres à un style */
+.times, .ico { display: none; }
+.only-apple { display: none !important; }
+html[data-theme="apple"] .only-winamp { display: none !important; }
+html[data-theme="apple"] .only-apple { display: inline-flex !important; }
+
+/* Barres fixes */
+#mini { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; }
+#mini:empty { display: none; }
+#sheet { position: fixed; inset: 0; z-index: 10; overflow-y: auto; }
+#sheet[hidden] { display: none; }
+
+/* Texte défilant */
+.marquee { display: block; overflow: hidden; white-space: nowrap; }
+.marquee > span { display: inline-block; }
+.marquee.scroll > span { animation: pan var(--dur, 8s) linear infinite alternate; }
+@keyframes pan { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--dx)); } }
+@media (prefers-reduced-motion: reduce) {
+  .marquee.scroll > span { animation: none; }
+  .marquee { text-overflow: ellipsis; }
+}

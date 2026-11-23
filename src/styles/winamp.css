@@ -1,0 +1,146 @@
+/* Thème « Winamp » : fenêtres biseautées, écran LCD vert sur noir, boutons métalliques.
+   Clair/sombre automatique : seul le métal change, l'écran LCD reste noir et vert. */
+/* Thème « Winamp » : fenêtres biseautées, écran LCD vert sur noir, boutons métalliques.
+   Clair/sombre automatique : seul le métal change, l'écran LCD reste noir et vert. */
+html[data-theme="winamp"] {
+  --bg: #15171e;
+  --metal-hi: #5d6478; --metal: #3d4353; --metal-lo: #262a36; --bevel-hi: #8a91a8; --bevel-lo: #0c0d12;
+  --text: #dfe3f0; --muted: #98a0b8;
+  --title-a: #4a5a96; --title-b: #1f2748; --title-text: #e8ecff;
+  --lcd-bg: #000; --lcd: #1bf21b; --lcd-dim: #0f8f0f; --lcd-hi: #eaffea; --sel: #0a0ac8;
+  --danger: #ff6b6b;
+  --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px);
+  --mini-h: 84px;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: light) {
+  html[data-theme="winamp"] {
+    --bg: #aab0c0;
+    --metal-hi: #e3e6ee; --metal: #c4c9d6; --metal-lo: #a2a8b9; --bevel-hi: #fff; --bevel-lo: #5b6075;
+    --text: #1a1d29; --muted: #4a5068;
+    --title-a: #6f82c4; --title-b: #34407a;
+    --danger: #b42323;
+  }
+}
+html[data-theme="winamp"] * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html[data-theme="winamp"], html[data-theme="winamp"] body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.35 var(--mono); touch-action: manipulation; }
+html[data-theme="winamp"] body { padding-top: var(--safe-t); min-height: 100dvh; }
+html[data-theme="winamp"] #app { max-width: 640px; margin: 0 auto; padding: 10px 10px calc(var(--mini-h) + var(--safe-b) + 20px); }
+html[data-theme="winamp"] body.no-player #app { padding-bottom: calc(var(--safe-b) + 20px); }
+html[data-theme="winamp"] h1 { font: inherit; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; margin: 0; }
+html[data-theme="winamp"] .muted { color: var(--muted); font-size: .8rem; }
+html[data-theme="winamp"] .err { color: var(--danger); }
+html[data-theme="winamp"] .center { text-align: center; padding: 28px 12px 18px; }
+html[data-theme="winamp"] .row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; align-items: center; }
+
+/* Fenêtre */
+html[data-theme="winamp"] .wa-window { background: linear-gradient(var(--metal-hi), var(--metal) 8%, var(--metal-lo)); border: 2px solid; border-color: var(--bevel-hi) var(--bevel-lo) var(--bevel-lo) var(--bevel-hi); margin-bottom: 10px; box-shadow: 0 2px 10px #0006; }
+html[data-theme="winamp"] .wa-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; padding: 0 4px 0 10px; color: var(--title-text); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; background: repeating-linear-gradient(0deg, #0003 0 1px, transparent 1px 3px), linear-gradient(90deg, var(--title-a), var(--title-b)); border-bottom: 1px solid var(--bevel-lo); }
+html[data-theme="winamp"] .wa-title > span, html[data-theme="winamp"] .wa-title > h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-theme="winamp"] .wa-x { width: 32px; height: 28px; padding: 0; border: 1px solid; border-color: var(--bevel-hi) var(--bevel-lo) var(--bevel-lo) var(--bevel-hi); background: linear-gradient(var(--metal-hi), var(--metal-lo)); color: var(--text); display: grid; place-items: center; cursor: pointer; }
+html[data-theme="winamp"] .wa-x svg { width: 18px; height: 18px; fill: currentColor; }
+html[data-theme="winamp"] .wa-x:active { border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); }
+html[data-theme="winamp"] .wa-body { padding: 10px; }
+
+/* Boutons métalliques */
+html[data-theme="winamp"] button { font: inherit; color: inherit; }
+html[data-theme="winamp"] .wbtn { min-width: 46px; height: 40px; padding: 0 10px; border: 2px solid; border-color: var(--bevel-hi) var(--bevel-lo) var(--bevel-lo) var(--bevel-hi); background: linear-gradient(var(--metal-hi), var(--metal) 50%, var(--metal-lo)); color: var(--text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 0; }
+html[data-theme="winamp"] .wbtn svg { width: 20px; height: 20px; fill: currentColor; }
+html[data-theme="winamp"] .wbtn.txt { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; padding: 0 12px; white-space: nowrap; }
+html[data-theme="winamp"] .wbtn.big { height: 48px; padding: 0 20px; font-size: .85rem; }
+html[data-theme="winamp"] .wbtn:active, html[data-theme="winamp"] .wbtn.on { border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); background: linear-gradient(var(--metal-lo), var(--metal)); }
+html[data-theme="winamp"] .wbtn.on { color: var(--lcd); text-shadow: 0 0 6px #1bf21b88; }
+html[data-theme="winamp"] .wbtn:disabled { opacity: .45; }
+html[data-theme="winamp"] button:focus-visible, html[data-theme="winamp"] input:focus-visible { outline: 2px solid var(--lcd); outline-offset: 1px; }
+
+/* Écran LCD */
+html[data-theme="winamp"] .lcd { background: var(--lcd-bg); color: var(--lcd); border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); padding: 6px 8px; text-shadow: 0 0 5px #1bf21b66; }
+html[data-theme="winamp"] .lcd .muted, html[data-theme="winamp"] .lcd.muted { color: var(--lcd-dim); text-shadow: none; }
+html[data-theme="winamp"] .crumbs { margin-bottom: 8px; font-size: .8rem; word-break: break-word; }
+html[data-theme="winamp"] .crumbs button { padding: 0; min-height: 0; border: 0; background: none; color: var(--lcd-hi); font: inherit; text-decoration: underline; cursor: pointer; }
+
+/* Texte défilant */
+html[data-theme="winamp"] .marquee { display: block; overflow: hidden; white-space: nowrap; }
+html[data-theme="winamp"] .marquee > span { display: inline-block; }
+html[data-theme="winamp"] .marquee.scroll > span { animation: pan var(--dur, 8s) linear infinite alternate; }
+@keyframes pan { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--dx)); } }
+
+/* Listes (playlist) */
+html[data-theme="winamp"] .wa-list, html[data-theme="winamp"] .list { list-style: none; margin: 0; padding: 0; background: #000; border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); max-height: none; }
+html[data-theme="winamp"] .wa-list li { border: 0; }
+html[data-theme="winamp"] .wa-list li > button { width: 100%; text-align: left; border: 0; border-radius: 0; background: transparent; color: var(--lcd); display: flex; gap: 10px; align-items: center; min-height: 46px; padding: 6px 10px; font-size: .9rem; cursor: pointer; }
+html[data-theme="winamp"] .wa-list .num { min-width: 2.2em; color: var(--lcd-dim); text-align: right; }
+html[data-theme="winamp"] .wa-list .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+html[data-theme="winamp"] .wa-list .muted { color: var(--lcd-dim); }
+html[data-theme="winamp"] .wa-list li.current > button { background: var(--sel); color: var(--lcd-hi); }
+html[data-theme="winamp"] .wa-list li.current .num { color: var(--lcd-hi); }
+html[data-theme="winamp"] .wa-list li > button:active { background: #0a0a6a; }
+
+/* Réglages, bandeau */
+html[data-theme="winamp"] .diag { font-size: .8rem; background: #000; color: var(--lcd); border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); padding: 10px; margin: 0 0 10px; }
+html[data-theme="winamp"] .diag .kv { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; }
+html[data-theme="winamp"] #banner:not(:empty) { background: #000; color: var(--lcd); border: 2px solid var(--danger); padding: 10px; margin-bottom: 10px; font-size: .85rem; }
+
+/* Mini-lecteur (barre du bas) */
+html[data-theme="winamp"] #mini { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; }
+html[data-theme="winamp"] #mini:empty { display: none; }
+html[data-theme="winamp"] .mini { max-width: 640px; margin: 0 auto; min-height: calc(var(--mini-h) + var(--safe-b)); padding: 8px 8px calc(8px + var(--safe-b)); background: linear-gradient(var(--metal-hi), var(--metal) 10%, var(--metal-lo)); border-top: 2px solid var(--bevel-hi); display: flex; align-items: center; gap: 4px; position: relative; }
+html[data-theme="winamp"] .mini .bar { position: absolute; top: 0; left: 0; height: 3px; background: var(--lcd); width: 0; box-shadow: 0 0 6px var(--lcd); }
+html[data-theme="winamp"] .mini .info { flex: 1; min-width: 0; background: none; border: 0; text-align: left; display: flex; gap: 6px; align-items: stretch; padding: 0; margin-right: 2px; cursor: pointer; }
+html[data-theme="winamp"] .mini .cover { width: 56px; height: 56px; flex: none; object-fit: cover; border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); background: #000; }
+html[data-theme="winamp"] .mini .t { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; height: 56px; }
+html[data-theme="winamp"] .mini .t b { font-weight: 400; }
+html[data-theme="winamp"] .mini .t .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+html[data-theme="winamp"] .mini .wbtn { min-width: 40px; padding: 0; height: 44px; }
+html[data-theme="winamp"] .ph { display: grid; place-items: center; color: var(--lcd-dim); background: #000; font-size: 2rem; }
+
+/* Lecteur plein écran */
+html[data-theme="winamp"] #sheet { position: fixed; inset: 0; z-index: 10; background: var(--bg); overflow-y: auto; padding: calc(var(--safe-t) + 10px) 10px calc(var(--safe-b) + 20px); }
+html[data-theme="winamp"] #sheet[hidden] { display: none; }
+html[data-theme="winamp"] .sheet-inner { max-width: 520px; margin: 0 auto; }
+html[data-theme="winamp"] .lcd-row { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+html[data-theme="winamp"] .main-lcd { flex: 1; min-width: 0; position: relative; padding: 8px 10px 6px; display: flex; flex-direction: column; justify-content: space-between; min-height: 112px; }
+html[data-theme="winamp"] .main-lcd .state { font-size: .8rem; position: absolute; top: 6px; left: 8px; }
+html[data-theme="winamp"] .main-lcd .time { font-size: 2.6rem; letter-spacing: .06em; font-variant-numeric: tabular-nums; text-align: right; line-height: 1.1; font-weight: 700; }
+html[data-theme="winamp"] .big-cover { width: 112px; height: 112px; flex: none; object-fit: cover; border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); background: #000; }
+html[data-theme="winamp"] .big-cover.ph { font-size: 3rem; }
+html[data-theme="winamp"] .marquee-lcd { margin-bottom: 6px; font-size: 1rem; }
+html[data-theme="winamp"] .info-lcd { display: flex; gap: 10px; justify-content: space-between; align-items: center; font-size: .8rem; margin-bottom: 8px; color: var(--lcd-dim); }
+html[data-theme="winamp"] .info-lcd .marquee { flex: 1; min-width: 0; }
+html[data-theme="winamp"] .info-lcd .tot { flex: none; }
+html[data-theme="winamp"] .info-lcd b { color: var(--lcd); font-weight: 400; }
+
+/* Spectre décoratif */
+html[data-theme="winamp"] .viz { display: flex; align-items: flex-end; gap: 2px; height: 34px; }
+html[data-theme="winamp"] .viz i { flex: 1; height: 100%; transform-origin: bottom; transform: scaleY(.08); background: linear-gradient(to top, #1bf21b 0 55%, #d8e21b 55% 80%, #f23b1b 80%); animation: eq var(--s) ease-in-out infinite alternate; animation-delay: var(--o); animation-play-state: paused; }
+html[data-theme="winamp"] .playing .viz i { animation-play-state: running; }
+@keyframes eq { from { transform: scaleY(.08); } to { transform: scaleY(var(--h)); } }
+
+/* Barre de position (curseur Winamp) */
+html[data-theme="winamp"] .seek { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 4px 0 8px; background: transparent; }
+html[data-theme="winamp"] .seek::-webkit-slider-runnable-track { height: 10px; background: #000; border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); }
+html[data-theme="winamp"] .seek::-moz-range-track { height: 6px; background: #000; border: 2px solid; border-color: var(--bevel-lo) var(--bevel-hi) var(--bevel-hi) var(--bevel-lo); }
+html[data-theme="winamp"] .seek::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 22px; margin-top: -8px; border: 2px solid; border-color: var(--bevel-hi) var(--bevel-lo) var(--bevel-lo) var(--bevel-hi); background: linear-gradient(var(--metal-hi), var(--metal-lo)); border-radius: 0; }
+html[data-theme="winamp"] .seek::-moz-range-thumb { width: 26px; height: 18px; border: 2px solid; border-color: var(--bevel-hi) var(--bevel-lo) var(--bevel-lo) var(--bevel-hi); background: linear-gradient(var(--metal-hi), var(--metal-lo)); border-radius: 0; }
+
+html[data-theme="winamp"] .controls { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+html[data-theme="winamp"] .controls .wbtn { flex: none; }
+html[data-theme="winamp"] .controls .gap { flex: 1; }
+@media (max-width: 380px) { html[data-theme="winamp"] .controls .wbtn { min-width: 40px; padding: 0 6px; } html[data-theme="winamp"] .controls .wbtn.txt { padding: 0 8px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="winamp"] .viz i { animation: none; transform: scaleY(.3); }
+  html[data-theme="winamp"] .marquee.scroll > span { animation: none; }
+  html[data-theme="winamp"] .marquee { text-overflow: ellipsis; }
+}
+
+/* Libellés texte (SHUF / REP) au lieu d'icônes */
+html[data-theme="winamp"] .ico { display: none; }
+html[data-theme="winamp"] .lbl { display: inline; }
+html[data-theme="winamp"] .wa-list li.folder .name::before { content: "["; }
+html[data-theme="winamp"] .wa-list li.folder .name::after { content: "]"; }
+html[data-theme="winamp"] .themes { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+html[data-theme="winamp"] .times { display: none; }
+html[data-theme="winamp"] .controls { gap: 3px; flex-wrap: nowrap; }
+html[data-theme="winamp"] .controls .wbtn { min-width: 38px; padding: 0 6px; }
+html[data-theme="winamp"] .controls .wbtn.txt { font-size: .68rem; padding: 0 7px; }

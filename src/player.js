@@ -180,6 +180,10 @@ export function createPlayer({ storage }) {
     },
     play() { if (audio.paused) return api.toggle(); },
     pause() { audio.pause(); },
+    stop() {
+      if (loadedTrackId) { audio.pause(); audio.currentTime = 0; }
+      resumeAt = 0; s.time = 0; s.status = 'paused'; persist(true); emit();
+    },
 
     next(auto = false) {
       if (!s.queue.length) return;
