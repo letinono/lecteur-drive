@@ -106,3 +106,33 @@ html[data-theme="apple"] .wa-title { display: flex; align-items: center; justify
 html[data-theme="apple"] .wa-title > span, html[data-theme="apple"] .wa-title > h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-theme="apple"] .row .wbtn.txt { flex: 1 1 0; min-width: 0; padding: 0 8px; font-size: .9rem; }
 html[data-theme="apple"] .row .wbtn.txt[data-act="up"] { flex: 0 0 auto; padding: 0 14px; }
+
+/* ---- Barre de navigation, grand titre, albums ---- */
+html[data-theme="apple"] .navbar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 0 -4px; }
+html[data-theme="apple"] .navback { border: 0; background: none; color: var(--accent); font-size: 1.05rem; padding: 0 8px 0 0; min-height: 44px; display: inline-flex; align-items: center; gap: 4px; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-theme="apple"] .navback span { font-size: 2rem; line-height: 1; margin-top: -4px; }
+html[data-theme="apple"] .wa-title { min-height: 0; padding: 0 0 6px; }
+html[data-theme="apple"] .wa-title h1 { font-size: 2.1rem; white-space: normal; overflow-wrap: anywhere; }
+html[data-theme="apple"] .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 8px; }
+html[data-theme="apple"] .actions .wbtn.txt { height: auto; min-height: 50px; padding: 10px 12px; border-radius: 12px; font-size: 1.05rem; white-space: normal; line-height: 1.15; text-align: center; gap: 8px; flex: none; min-width: 0; }
+html[data-theme="apple"] h2.sec { font: 700 1.25rem/1.2 var(--font); margin: 22px 0 10px; letter-spacing: -.01em; }
+html[data-theme="apple"] .wa-list li.folder > button { padding-left: 0; gap: 14px; min-height: 68px; }
+html[data-theme="apple"] .wa-list li.folder .art { width: 52px; height: 52px; flex: none; margin-left: 0; border-radius: 8px; display: grid; place-items: center; color: #fff; font-size: 1.5rem; background: linear-gradient(140deg, hsl(var(--h) 72% 62%), hsl(calc(var(--h) + 45) 70% 42%)); box-shadow: 0 1px 4px #0003; }
+html[data-theme="apple"] .wa-list li.folder .num { padding-left: 0; font-size: 1.6rem; color: var(--muted); }
+html[data-theme="apple"] .wa-list li.folder .name { font-weight: 500; }
+html[data-theme="apple"] .wa-list li.folder { margin-left: 0; }
+html[data-theme="apple"] .wa-list li.folder + li.folder { margin-left: 0; }
+html[data-theme="apple"] .wa-list li.folder > button { padding-left: 16px; }
+html[data-theme="apple"] .wa-list li > button .name { line-height: 1.25; }
+/* aucun texte ne déborde de son bouton */
+html[data-theme="apple"] .wbtn.txt { white-space: normal; text-align: center; line-height: 1.15; height: auto; min-height: 44px; padding-top: 8px; padding-bottom: 8px; overflow-wrap: anywhere; }
+html[data-theme="apple"] .row .wbtn.txt { flex: 1 1 auto; }
+html[data-theme="apple"] .diag .kv { flex-wrap: wrap; }
+html[data-theme="apple"] .diag .row { flex-wrap: wrap; }
+html[data-theme="apple"] .controls .wbtn.txt { padding: 0; height: 44px; }
+/* alignement des lignes de titres */
+html[data-theme="apple"] .wa-list li + li { margin-left: 0; }
+html[data-theme="apple"] .wa-list li:not(.folder) > button { padding-left: 0; }
+html[data-theme="apple"] .wa-list li .dur { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+html[data-theme="apple"] .tech { display: none; }
+html[data-theme="apple"] .pre, html[data-theme="apple"] .post { display: none; }

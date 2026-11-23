@@ -8,7 +8,7 @@ import {
 } from './auth.js';
 import { storage } from './storage/index.js';
 import { createPlayer, stripExt } from './player.js';
-import { mountPlayerUI, esc, fitMarquees } from './ui.js';
+import { mountPlayerUI, esc, fitMarquees, fmtDur } from './ui.js';
 import { clearCache, collectTracks, forgetRoot, getRoot, list } from './library.js';
 import { store } from './store.js';
 import { THEMES, getTheme, setTheme } from './theme.js';
@@ -128,24 +128,44 @@ function render() {
   const st = getAuthState();
   if (!st.signedIn && !listing && !player.state.queue.length) { view.innerHTML = renderLogin(); return; }
 
-  let html = `<section class="wa-window"><div class="wa-title"><h1>${esc(ROOT_FOLDER_NAME)}</h1>
-    <button class="wa-x" data-act="settings" aria-label="Réglages" aria-expanded="${showSettings}"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-1.7-1L15 3.4h-4l-.4 2.6a7.4 7.4 0 00-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 001.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 001.7-1l2.4 1 2-3.4zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg></button></div><div class="wa-body">`;
+  const apple = getTheme() === 'apple';
+  const here = stack[stack.length - 1];
+  const gear = `<button class="wa-x" data-act="settings" aria-label="Réglages" aria-expanded="${showSettings}"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-1.7-1L15 3.4h-4l-.4 2.6a7.4 7.4 0 00-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 001.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 001.7-1l2.4 1 2-3.4zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/></svg></button>`;
+  const hue = (name) => { let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
+
+  let html = '<section class="wa-window">';
+  if (apple) {
+    // barre de navigation iOS : « ‹ dossier parent » à gauche, réglages à droite, grand titre dessous
+    const parent = stack.length > 1 ? stack[stack.length - 2].name : '';
+    html += `<div class="navbar">${parent ? `<button class="navback" data-act="up" aria-label="Dossier parent : ${esc(parent)}"><span aria-hidden="true">‹</span> ${esc(parent)}</button>` : '<span></span>'}${gear}</div>
+      <div class="wa-title"><h1>${esc(here ? here.name : ROOT_FOLDER_NAME)}</h1></div><div class="wa-body">`;
+  } else {
+    html += `<div class="wa-title"><h1>${esc(ROOT_FOLDER_NAME)}</h1>${gear}</div><div class="wa-body">`;
+  }
   if (showSettings) html += renderSettings();
 
-  if (stack.length) {
+  if (stack.length && !apple) {
     const crumbs = stack.map((f, i) => (i === stack.length - 1 ? `<span>${esc(f.name)}</span>` : `<button data-crumb="${i}">${esc(f.name)}</button>`)).join(' › ');
     html += `<div class="crumbs lcd">${crumbs}</div>`;
   }
   if (listing) {
     const has = listing.folders.length || listing.tracks.length;
-    html += `<div class="row">
-      <button class="wbtn txt" data-act="playfolder" ${has ? '' : 'disabled'}>▶ Lire le dossier</button>
-      <button class="wbtn txt" data-act="shufflefolder" ${has ? '' : 'disabled'}>⤮ Aléatoire</button>
-      ${stack.length > 1 ? '<button class="wbtn txt" data-act="up">⬆ Parent</button>' : ''}</div>`;
-    html += '<ul class="list wa-list">' +
-      listing.folders.map((f, i) => `<li class="folder"><button data-folder="${i}"><span class="num" aria-hidden="true">▸</span><span class="name">${esc(f.name)}</span></button></li>`).join('') +
-      listing.tracks.map((t, i) => `<li class="${t.id === currentTrackId() ? 'current' : ''}"><button data-track="${i}"><span class="num" aria-hidden="true">${t.id === currentTrackId() ? '▶' : String(i + 1) + '.'}</span><span class="name">${esc(stripExt(t.name))}</span><span class="muted">${fmtSize(Number(t.size))}</span></button></li>`).join('') +
-      '</ul>';
+    html += apple
+      ? `<div class="actions">
+          <button class="wbtn txt" data-act="playfolder" ${has ? '' : 'disabled'}><span aria-hidden="true">▶</span> Lecture</button>
+          <button class="wbtn txt" data-act="shufflefolder" ${has ? '' : 'disabled'}><span aria-hidden="true">⤮</span> Aléatoire</button></div>`
+      : `<div class="row">
+          <button class="wbtn txt" data-act="playfolder" ${has ? '' : 'disabled'}>▶ Lire le dossier</button>
+          <button class="wbtn txt" data-act="shufflefolder" ${has ? '' : 'disabled'}>⤮ Aléatoire</button>
+          ${stack.length > 1 ? '<button class="wbtn txt" data-act="up">⬆ Parent</button>' : ''}</div>`;
+    const folderRow = (f, i) => `<li class="folder"><button data-folder="${i}">${apple ? `<span class="art" style="--h:${hue(f.name)}" aria-hidden="true">♪</span>` : ''}<span class="num" aria-hidden="true">${apple ? '›' : '▸'}</span><span class="name">${esc(f.name)}</span></button></li>`;
+    const trackRow = (t, i) => `<li class="${t.id === currentTrackId() ? 'current' : ''}"><button data-track="${i}"><span class="num" aria-hidden="true">${t.id === currentTrackId() ? '▶' : String(i + 1) + (apple ? '' : '.')}</span><span class="name">${esc(stripExt(t.name))}</span><span class="muted dur">${fmtDur(player.durationOf(t.id)) || fmtSize(Number(t.size))}</span></button></li>`;
+    if (apple) {
+      if (listing.folders.length) html += `<h2 class="sec">Albums</h2><ul class="list wa-list">${listing.folders.map(folderRow).join('')}</ul>`;
+      if (listing.tracks.length) html += `<h2 class="sec">Titres</h2><ul class="list wa-list">${listing.tracks.map(trackRow).join('')}</ul>`;
+    } else {
+      html += `<ul class="list wa-list">${listing.folders.map(folderRow).join('')}${listing.tracks.map(trackRow).join('')}</ul>`;
+    }
     if (!has) html += '<p class="muted">Dossier vide (ni sous-dossier ni MP3).</p>';
   }
   if (busy) html += `<p class="muted spin" role="status">${esc(busy)}</p>`;

@@ -144,3 +144,49 @@ html[data-theme="winamp"] .times { display: none; }
 html[data-theme="winamp"] .controls { gap: 3px; flex-wrap: nowrap; }
 html[data-theme="winamp"] .controls .wbtn { min-width: 38px; padding: 0 6px; }
 html[data-theme="winamp"] .controls .wbtn.txt { font-size: .68rem; padding: 0 7px; }
+html[data-theme="winamp"] .art, html[data-theme="winamp"] h2.sec, html[data-theme="winamp"] .navbar { display: none; }
+
+/* ===== Retouches pour ressembler au Winamp 2 classique : métal sombre nervuré, boutons foncés, playlist verte ===== */
+html[data-theme="winamp"] {
+  --bg: #0b0b10;
+  --metal-hi: #4d4f5e; --metal: #34353f; --metal-lo: #1f2028; --bevel-hi: #6f7284; --bevel-lo: #060608;
+  --text: #d6d9e6; --muted: #8b90a6;
+  --title-a: #5b5d6d; --title-b: #2e2f39; --title-text: #e6e8f2;
+  color-scheme: dark;
+}
+html[data-theme="winamp"] .wa-window { background: linear-gradient(#3a3b47, #25262e); border-color: #6f7284 #060608 #060608 #6f7284; }
+/* barre de titre nervurée, texte centré entre deux filets */
+html[data-theme="winamp"] .wa-title { position: relative; justify-content: center; padding: 0 40px; background: repeating-linear-gradient(0deg, #0006 0 1px, transparent 1px 3px), linear-gradient(#5d5f70, #2d2e38); color: #e6e8f2; font-weight: 700; }
+html[data-theme="winamp"] .wa-title > span, html[data-theme="winamp"] .wa-title > h1 { flex: 1; display: flex; align-items: center; gap: 10px; overflow: visible; text-overflow: clip; white-space: nowrap; justify-content: center; }
+html[data-theme="winamp"] .wa-title > span::before, html[data-theme="winamp"] .wa-title > span::after,
+html[data-theme="winamp"] .wa-title > h1::before, html[data-theme="winamp"] .wa-title > h1::after { content: ""; flex: 1; height: 7px; background: repeating-linear-gradient(0deg, #9c9fb0 0 1px, #15161c 1px 3px); opacity: .85; }
+html[data-theme="winamp"] .wa-x { position: absolute; right: 3px; top: 1px; background: linear-gradient(#5b5d6d, #2e2f39); color: #d6d9e6; }
+/* boutons sombres, glyphes clairs */
+html[data-theme="winamp"] .wbtn { background: linear-gradient(#5b5d6d, #383944 50%, #26272f); color: #d9dce8; border-color: #7b7e91 #050507 #050507 #7b7e91; }
+html[data-theme="winamp"] .wbtn:active, html[data-theme="winamp"] .wbtn.on { background: linear-gradient(#22232b, #33343e); border-color: #050507 #7b7e91 #7b7e91 #050507; }
+html[data-theme="winamp"] .wbtn.on { color: #1bf21b; }
+html[data-theme="winamp"] .controls .wbtn svg { width: 18px; height: 18px; }
+/* écran LCD : temps, spectre, titre défilant, ligne technique */
+html[data-theme="winamp"] .lcd { background: #000; border-color: #050507 #6f7284 #6f7284 #050507; }
+html[data-theme="winamp"] .main-lcd .time { font-size: 2.8rem; letter-spacing: .1em; color: #28ff28; text-shadow: 0 0 8px #1bf21b88; }
+html[data-theme="winamp"] .viz { height: 24px; }
+html[data-theme="winamp"] .marquee-lcd { font-size: .95rem; color: #28ff28; }
+html[data-theme="winamp"] .info-lcd .marquee { display: none; }
+html[data-theme="winamp"] .info-lcd { justify-content: flex-start; gap: 14px; color: #28ff28; font-size: .85rem; }
+html[data-theme="winamp"] .info-lcd .tech { flex: 1; }
+html[data-theme="winamp"] .info-lcd .tech b { font-weight: 700; color: #28ff28; }
+html[data-theme="winamp"] .info-lcd .tech em { font-style: normal; color: #28ff28; margin-left: 6px; text-transform: lowercase; }
+html[data-theme="winamp"] .info-lcd .tot { color: #0f8f0f; }
+/* curseur de position doré */
+html[data-theme="winamp"] .seek::-webkit-slider-thumb { background: linear-gradient(#f3d489, #c58a22 55%, #8a5a10); border-color: #ffe9b0 #5a3a08 #5a3a08 #ffe9b0; }
+html[data-theme="winamp"] .seek::-moz-range-thumb { background: linear-gradient(#f3d489, #c58a22 55%, #8a5a10); border-color: #ffe9b0 #5a3a08 #5a3a08 #ffe9b0; }
+/* playlist : fond noir, texte vert, durées à droite, piste en cours en blanc */
+html[data-theme="winamp"] .wa-list { background: #000; }
+html[data-theme="winamp"] .wa-list li > button { font-family: Arial, Helvetica, sans-serif; font-size: 1rem; color: #28ff28; min-height: 44px; padding: 6px 10px; gap: 8px; }
+html[data-theme="winamp"] .wa-list .num { min-width: 0; color: #28ff28; text-align: left; }
+html[data-theme="winamp"] .wa-list .dur, html[data-theme="winamp"] .wa-list .muted { color: #28ff28; font-size: .95rem; margin-left: auto; font-variant-numeric: tabular-nums; }
+html[data-theme="winamp"] .wa-list li.current > button, html[data-theme="winamp"] .wa-list li.current .num, html[data-theme="winamp"] .wa-list li.current .dur { background: transparent; color: #fff; font-weight: 700; }
+html[data-theme="winamp"] .wa-list li > button:active { background: #0a2a0a; }
+html[data-theme="winamp"] .wa-list li.folder .name { color: #28ff28; }
+html[data-theme="winamp"] .pre { color: #28ff28; }
+html[data-theme="winamp"] .mini { background: linear-gradient(#3a3b47, #1f2028); border-top-color: #6f7284; }

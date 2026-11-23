@@ -1,6 +1,7 @@
 // Mini-lecteur et lecteur plein écran (style « Winamp »). Les mises à jour de temps ne redessinent rien :
 // elles modifient quelques nœuds.
 import { stripExt } from './player.js';
+import { getTheme } from './theme.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 export { esc };
@@ -20,6 +21,8 @@ export { I as icons };
 // Spectre décoratif (CSS). Un vrai analyseur audio (Web Audio) casserait la lecture en arrière-plan sur iOS.
 const bars = (n) => Array.from({ length: n }, (_, i) => `<i style="--h:${(0.35 + ((i * 37) % 60) / 100).toFixed(2)};--s:${(0.45 + ((i * 53) % 70) / 100).toFixed(2)}s;--o:-${((i * 29) % 90) / 100}s"></i>`).join('');
 const VIZ = (n) => `<div class="viz" aria-hidden="true">${bars(n)}</div>`;
+
+export const fmtDur = (sec) => (sec > 0 ? `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}` : '');
 
 const mmss = (t) => {
   if (!Number.isFinite(t) || t < 0) return '00:00';
@@ -66,21 +69,23 @@ export function mountPlayerUI({ player, mini, sheet }) {
     if (!s.queue.length) { sheet.hidden = true; return; }
     const sub = [s.meta?.artist, s.meta?.album].filter(Boolean).join(' — ');
     const rep = s.repeat === 'one' ? ' (une piste)' : s.repeat === 'all' ? ' (tout)' : '';
+    const tc = s.meta?.tech;
+    const tech = `<span class="tech"><b>${tc ? tc.kbps : '---'}</b> kbps <b>${tc ? tc.khz : '--'}</b> kHz <em>${tc ? (tc.channels === 1 ? 'mono' : 'stereo') : ''}</em></span>`;
     const status = s.status === 'loading' ? '…' : s.status === 'playing' ? '▶' : s.status === 'error' ? '!' : s.time > 0 ? '❚❚' : '■';
     const q = s.order.map((qi, p) => {
       const t = s.queue[qi];
-      return `<li class="${p === s.pos ? 'current' : ''}"><button data-pl="jump" data-pos="${p}"><span class="num">${p + 1}.</span><span class="name">${esc(stripExt(t.name))}</span></button></li>`;
+      return `<li class="${p === s.pos ? 'current' : ''}"><button data-pl="jump" data-pos="${p}"><span class="num">${p + 1}.</span><span class="name">${esc(stripExt(t.name))}</span><span class="dur">${fmtDur(player.durationOf(t.id))}</span></button></li>`;
     }).join('');
     sheet.innerHTML = `<div class="sheet-inner ${playing() ? 'playing' : ''}">
       <section class="wa-window player-window">
-        <div class="wa-title"><span>Lecteur Drive</span><button class="wa-x" data-pl="close" aria-label="Fermer le lecteur">${I.down}</button></div>
+        <div class="wa-title"><span>${getTheme() === 'winamp' ? 'Winamp' : 'Lecteur Drive'}</span><button class="wa-x" data-pl="close" aria-label="Fermer le lecteur">${I.down}</button></div>
         <div class="wa-body">
           <div class="lcd-row">
             <div class="lcd main-lcd"><span class="state" aria-hidden="true">${status}</span><span class="time js-cur" aria-label="Temps écoulé">00:00</span>${VIZ(22)}</div>
             ${coverHtml('big-cover')}
           </div>
-          <div class="lcd marquee-lcd"><span class="marquee"><span class="title">${esc(s.meta?.title || '')}</span></span></div>
-          <div class="lcd info-lcd"><span class="marquee"><span>${esc(sub) || '&nbsp;'}</span></span><span class="tot">Total <b class="js-dur">00:00</b></span></div>
+          <div class="lcd marquee-lcd"><span class="marquee"><span><span class="pre">${s.pos + 1}. ${s.meta?.artist ? esc(s.meta.artist) + ' - ' : ''}</span><span class="title">${esc(s.meta?.title || '')}</span><span class="post js-post"></span></span></span></div>
+          <div class="lcd info-lcd"><span class="marquee"><span>${esc(sub) || '&nbsp;'}</span></span>${tech}<span class="tot">Total <b class="js-dur">00:00</b></span></div>
           ${s.status === 'error' ? `<p class="err" role="alert">${esc(s.error)}</p>` : ''}
           <input id="seek" class="seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Position dans la piste">
           <div class="times" aria-hidden="true"><span class="js-cur">00:00</span><span class="js-dur">00:00</span></div>
@@ -118,6 +123,7 @@ export function mountPlayerUI({ player, mini, sheet }) {
     if (seek) { seek.value = Math.round(pct * 1000); seek.style.setProperty('--p', `${pct * 100}%`); }
     sheet.querySelectorAll('.js-cur').forEach((e) => { e.textContent = mmss(s.time); });
     sheet.querySelectorAll('.js-dur').forEach((e) => { e.textContent = mmss(dur); });
+    sheet.querySelectorAll('.js-post').forEach((e) => { e.textContent = dur ? ` (${fmtDur(dur)})` : ''; });
   }
 
   const openSheet = () => { sheet.hidden = false; renderSheet(); };

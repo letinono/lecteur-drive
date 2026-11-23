@@ -40,6 +40,8 @@ export function createPlayer({ storage }) {
     status: 'idle', // idle | loading | playing | paused | error
     error: '', errorCode: '', meta: null, time: 0, duration: 0,
   };
+  const durations = store.get('dur', {}); // durées connues (id -> secondes), remplies au fil des lectures
+  let durDirty = false;
   const listeners = new Set();
   const cache = new Map(); // id -> { ctrl, promise, url, cover, meta }
   let loadId = 0;
@@ -77,7 +79,7 @@ export function createPlayer({ storage }) {
       const tags = await readTags(blob).catch(() => ({}));
       e.url = URL.createObjectURL(blob);
       if (tags.cover) e.cover = URL.createObjectURL(new Blob([tags.cover.data], { type: tags.cover.mime }));
-      e.meta = { title: tags.title || stripExt(track.name), artist: tags.artist || '', album: tags.album || '', cover: e.cover };
+      e.meta = { title: tags.title || stripExt(track.name), artist: tags.artist || '', album: tags.album || '', cover: e.cover, tech: tags.audio || null };
       return e;
     })();
     e.promise.catch(() => { if (cache.get(track.id) === e) cache.delete(track.id); });
@@ -158,6 +160,7 @@ export function createPlayer({ storage }) {
     audio,
     on(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     current,
+    durationOf: (id) => durations[id] || 0,
 
     playQueue(tracks, startIndex = 0, { shuffle = s.shuffle } = {}) {
       if (!tracks.length) return;
@@ -263,6 +266,7 @@ export function createPlayer({ storage }) {
 
   // ---------- sauvegarde ----------
   function persist(force = false) {
+    if (durDirty) { durDirty = false; store.set('dur', durations); }
     const now = Date.now();
     if (!force && now - lastSave < 4000) return;
     lastSave = now;
@@ -281,7 +285,16 @@ export function createPlayer({ storage }) {
     s.status = 'paused'; persist(true); emit(); updatePlaybackState();
   });
   audio.addEventListener('ended', () => api.next(true));
-  audio.addEventListener('durationchange', () => { s.duration = Number.isFinite(audio.duration) ? audio.duration : 0; emit('time'); });
+  audio.addEventListener('durationchange', () => {
+    s.duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+    if (loadedTrackId && s.duration > 0 && durations[loadedTrackId] !== Math.round(s.duration)) {
+      durations[loadedTrackId] = Math.round(s.duration);
+      const keys = Object.keys(durations);
+      if (keys.length > 3000) delete durations[keys[0]];
+      durDirty = true; emit(); // la playlist affiche la durée dès qu'elle est connue
+    }
+    emit('time');
+  });
   audio.addEventListener('timeupdate', () => {
     if (!loadedTrackId) return;
     s.time = audio.currentTime;

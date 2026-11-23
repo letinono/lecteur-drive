@@ -179,3 +179,37 @@ test('menu des styles : Winamp par défaut, Apple Music au choix, choix mémoris
   await page.getByRole('button', { name: 'Winamp' }).click();
   expect(await theme()).toBe('winamp');
 });
+
+test('style Apple Music : barre de navigation, retour, albums, boutons sans débordement', async ({ page }) => {
+  await mockGoogle(page);
+  await page.addInitScript(() => { if (!localStorage.getItem('ld.theme')) localStorage.setItem('ld.theme', '"apple"'); });
+  await login(page);
+  await expect(page.locator('h1')).toHaveText('Musique');
+  await expect(page.locator('.navback')).toHaveCount(0); // racine : pas de retour
+  await expect(page.locator('h2.sec')).toHaveText(['Albums', 'Titres']);
+  await expect(page.locator('li.folder .art').first()).toBeVisible();
+  await page.locator('[data-folder]').nth(1).click(); // Album B
+  await expect(page.locator('h1')).toHaveText('Album B');
+  await expect(page.locator('.navback')).toContainText('Musique');
+  // aucun libellé de bouton ne dépasse de son bouton, même sur un écran très étroit
+  for (const w of [390, 320]) {
+    await page.setViewportSize({ width: w, height: 700 });
+    const overflowing = await page.evaluate(() => [...document.querySelectorAll('#app .wbtn, #mini .wbtn')]
+      .filter((b) => b.offsetParent && b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent.trim()));
+    expect(overflowing, `largeur ${w}`).toEqual([]);
+  }
+  await page.locator('.navback').click();
+  await expect(page.locator('h1')).toHaveText('Musique');
+});
+
+test('Winamp : débit/fréquence lus dans le fichier, durée affichée dans la playlist', async ({ page }) => {
+  await mockGoogle(page);
+  await login(page);
+  await page.locator('[data-folder]').nth(1).click();
+  await page.locator('[data-track]').first().click();
+  await page.locator('#mini .info').click();
+  await expect(page.locator('#sheet .tech')).toContainText('128 kbps 44 kHz stereo');
+  await expect(page.locator('#sheet .wa-title span').first()).toHaveText('Winamp');
+  await expect(page.locator('#sheet .list li.current .dur')).toHaveText('0:01');
+  await expect(page.locator('#sheet .marquee-lcd')).toContainText('1. Artiste Test - Première (tag)');
+});

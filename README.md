@@ -41,7 +41,7 @@ En mode « Test », Google redemande une connexion environ **tous les 7 jours** 
 - Touche une piste : la file d'attente est le dossier affiché, à partir de cette piste. « ▶ Lire le dossier » lit le dossier et ses sous-dossiers ; « 🔀 Aléatoire » fait pareil dans le désordre.
 - Touche le mini-lecteur en bas pour ouvrir le lecteur plein écran (progression, file d'attente, aléatoire, répétition).
 - La roue dentée ouvre les réglages : **choix du style**, diagnostic, actualisation des dossiers, déconnexion.
-- **Styles** : « Winamp » (par défaut : fenêtres biseautées, écran LCD vert, temps en gros chiffres, titre défilant, spectre animé, playlist) et « Apple Music » (grands titres, cartes arrondies, accent rouge, mini-lecteur translucide). Le choix est mémorisé sur l'iPhone. Le clair/sombre automatique est géré dans les deux styles. Le spectre Winamp est décoratif : un vrai analyseur audio (Web Audio) casserait la lecture en arrière-plan sur iOS.
+- **Styles** : « Winamp » (par défaut, inspiré du Winamp 2 classique : métal sombre nervuré, écran LCD vert avec temps en gros chiffres, spectre, titre défilant, ligne `128 kbps 44 kHz stereo` lue dans le fichier MP3, curseur doré, playlist verte avec durées, piste en cours en blanc) et « Apple Music » (barre de navigation avec retour, grand titre, albums avec pochette colorée, boutons Lecture / Aléatoire, mini-lecteur translucide, plein écran avec grande pochette). Le choix est mémorisé sur l'iPhone. Winamp est un thème sombre fixe, Apple Music suit le clair/sombre de l'iPhone. Le spectre est décoratif (un vrai analyseur Web Audio casserait la lecture en arrière-plan sur iOS) ; il n'y a ni égaliseur ni volume dans l'app (le volume de l'iPhone se règle avec les boutons physiques). Les durées de la playlist apparaissent au fur et à mesure que les pistes sont lues.
 
 ## 5. À vérifier sur ton iPhone (ce que les tests ne peuvent pas couvrir)
 
@@ -57,7 +57,7 @@ Les tests automatiques tournent sur Chromium avec un profil d'iPhone et un faux 
 8. [ ] Aléatoire, répétition (tout / une piste), « Lire le dossier » avec sous-dossiers.
 9. [ ] Fermer complètement l'app puis la rouvrir : dernière piste et position retrouvées (lecture à la demande).
 10. [ ] Après plus d'1 h d'usage : le jeton se renouvelle seul, ou le bandeau « Reconnecter » apparaît sans couper la piste en cours.
-11. [ ] Mode sombre (Réglages iOS → Affichage) : l'interface suit automatiquement, dans les deux styles ; le changement de style (roue dentée) s'applique tout de suite et reste après fermeture de l'app.
+11. [ ] Mode sombre (Réglages iOS → Affichage) : Apple Music suit automatiquement ; le changement de style (roue dentée) s'applique tout de suite et reste après fermeture de l'app.
 12. [ ] Fichiers de plus de 30 Mo (le plus gros connu : 29 Mo) : démarrage acceptable en 4G.
 
 ## Comment ça marche (choix techniques)

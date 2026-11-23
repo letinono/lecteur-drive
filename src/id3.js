@@ -96,19 +96,46 @@ function parseV1(b) {
   return tags;
 }
 
+const BR = {
+  1: { 1: [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448], 2: [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384], 3: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320] },
+  2: { 1: [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256], 2: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160], 3: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160] },
+};
+const SR = { 1: [44100, 48000, 32000], 2: [22050, 24000, 16000], 25: [11025, 12000, 8000] };
+
+/** Cherche la première trame MPEG et en lit débit, fréquence et nombre de canaux. */
+function parseMpeg(b) {
+  for (let i = 0; i + 3 < b.length; i++) {
+    if (b[i] !== 0xff || (b[i + 1] & 0xe0) !== 0xe0) continue;
+    const vb = (b[i + 1] >> 3) & 3, lb = (b[i + 1] >> 1) & 3;
+    const bi = (b[i + 2] >> 4) & 15, si = (b[i + 2] >> 2) & 3, ch = (b[i + 3] >> 6) & 3;
+    if (vb === 1 || lb === 0 || bi === 0 || bi === 15 || si === 3) continue;
+    const ver = vb === 3 ? 1 : vb === 2 ? 2 : 25;
+    const kbps = BR[ver === 1 ? 1 : 2][4 - lb]?.[bi];
+    if (!kbps) continue;
+    return { kbps, khz: Math.round(SR[ver][si] / 1000), channels: ch === 3 ? 1 : 2 };
+  }
+  return null;
+}
+
 /** @returns {Promise<{title?:string,artist?:string,album?:string,track?:string,cover?:{mime:string,data:Uint8Array}}>} */
 export async function readTags(blob) {
   const head = new Uint8Array(await blob.slice(0, 10).arrayBuffer());
   if (head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) { // « ID3 »
     const size = synchsafe(head, 6);
     const buf = new Uint8Array(await blob.slice(0, 10 + size).arrayBuffer());
-    try { return clean(parseV2(buf)); } catch { return {}; }
+    let tags = {};
+    try { tags = clean(parseV2(buf)); } catch { /* tags illisibles : on garde le nom de fichier */ }
+    const start = 10 + size + (head[5] & 0x10 ? 10 : 0);
+    const audio = parseMpeg(new Uint8Array(await blob.slice(start, start + 8192).arrayBuffer()));
+    if (audio) tags.audio = audio;
+    return tags;
   }
+  const audio = parseMpeg(new Uint8Array(await blob.slice(0, 8192).arrayBuffer()));
   if (blob.size > 128) {
     const tail = new Uint8Array(await blob.slice(blob.size - 128).arrayBuffer());
-    if (tail[0] === 0x54 && tail[1] === 0x41 && tail[2] === 0x47) return clean(parseV1(tail));
+    if (tail[0] === 0x54 && tail[1] === 0x41 && tail[2] === 0x47) return { ...clean(parseV1(tail)), ...(audio ? { audio } : {}) };
   }
-  return {};
+  return audio ? { audio } : {};
 }
 
 function clean(t) {
