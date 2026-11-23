@@ -6,7 +6,7 @@ test('le renouvellement silencieux remplace le jeton', async ({ page }) => {
   await login(page);
   await page.getByRole('button', { name: 'Réglages' }).click();
   await page.getByRole('button', { name: 'Tester le renouvellement' }).click();
-  await expect(page.getByRole('status')).toContainText('réussi');
+  await expect(page.locator('#view').getByRole('status')).toContainText('réussi');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('ld.token')).access_token)).toBe('tok2');
 });
 

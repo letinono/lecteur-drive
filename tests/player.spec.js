@@ -25,7 +25,7 @@ test('dossier « Musique » absent : message clair', async ({ page }) => {
   await mockGoogle(page, { noRoot: true });
   await page.goto('/');
   await page.getByRole('button', { name: 'Se connecter avec Google' }).click();
-  await expect(page.getByRole('status')).toContainText('introuvable');
+  await expect(page.locator('#view').getByRole('status')).toContainText('introuvable');
 });
 
 test('navigation dans un sous-dossier, fil d\'Ariane, retour, chemin mémorisé', async ({ page }) => {

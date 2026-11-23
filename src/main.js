@@ -13,8 +13,22 @@ import { clearCache, collectTracks, forgetRoot, getRoot, list } from './library.
 import { store } from './store.js';
 import { THEMES, getTheme, setTheme } from './theme.js';
 
+// Mise à jour : le service worker garde l'interface en cache ; quand une nouvelle version est installée,
+// on recharge tout de suite si rien ne joue, sinon on propose de le faire.
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('./sw.js').then((reg) => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    setInterval(check, 30 * 60 * 1000);
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return; // première installation : rien à recharger
+    const playingNow = document.querySelector('audio') && !document.querySelector('audio').paused;
+    if (!playingNow) { location.reload(); return; }
+    const box = document.getElementById('update');
+    if (box) box.innerHTML = '<strong>Nouvelle version disponible.</strong> <button class="wbtn txt" data-act="reload">Mettre à jour</button>';
+  });
 }
 
 const view = document.getElementById('view');
@@ -103,6 +117,7 @@ function renderSettings() {
   return `<div class="diag"><strong>Réglages</strong>
     <div class="kv"><span>Mode app (écran d'accueil)</span><span>${isStandalone() ? 'oui' : 'non (Safari)'}</span></div>
     <div class="kv"><span>Jeton Google expire dans</span><span id="remaining">${st.signedIn ? mmss(st.remainingMs) : 'expiré'}</span></div>
+    <div class="kv"><span>Version</span><span>${esc(typeof __BUILD__ === 'string' ? __BUILD__ : 'dev')}</span></div>
     <div class="kv"><span>Dossier</span><span>${esc(ROOT_FOLDER_NAME)}</span></div>
     <div class="kv"><span>Style</span><span class="themes">${Object.entries(THEMES).map(([k, v]) => `<button class="wbtn txt ${getTheme() === k ? 'on' : ''}" data-theme="${k}" aria-pressed="${getTheme() === k}">${esc(v)}</button>`).join('')}</span></div>
     <div class="row"><button class="wbtn txt" data-act="refresh">Actualiser les dossiers</button><button class="wbtn txt" data-act="renew">Tester le renouvellement</button><button class="wbtn txt" data-act="signout">Se déconnecter</button></div></div>`;
@@ -163,6 +178,7 @@ document.addEventListener('click', async (ev) => {
     return;
   }
   switch (d.act) {
+    case 'reload': location.reload(); break;
     case 'signin': await doSignIn(); break;
     case 'redirect': signInRedirect(); break;
     case 'settings': showSettings = !showSettings; render(); break;

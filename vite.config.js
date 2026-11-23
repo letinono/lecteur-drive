@@ -34,6 +34,7 @@ function serviceWorkerPlugin() {
 // base './' : fonctionne sous https://utilisateur.github.io/nom-du-depot/
 export default defineConfig({
   base: './',
+  define: { __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC') },
   plugins: [serviceWorkerPlugin()],
   build: { target: 'es2020' },
 });
