@@ -40,7 +40,7 @@ En mode « Test », Google redemande une connexion environ **tous les 7 jours** 
 - **L'app ne montre et ne lit que ce dossier.** Précision honnête : Google ne sait pas limiter une autorisation à un seul dossier ; le jeton garde donc la permission « lecture seule du Drive » et la restriction est appliquée par l'app (le code est public et vérifiable).
 - Touche une piste : la file d'attente est le dossier affiché, à partir de cette piste. « ▶ Lire le dossier » lit le dossier et ses sous-dossiers ; « 🔀 Aléatoire » fait pareil dans le désordre.
 - Touche le mini-lecteur en bas pour ouvrir le lecteur plein écran (progression, file d'attente, aléatoire, répétition).
-- Le roue dentée ouvre les réglages : diagnostic, actualisation des dossiers, déconnexion.
+- La roue dentée ouvre les réglages : diagnostic, actualisation des dossiers, déconnexion.
 
 ## 5. À vérifier sur ton iPhone (ce que les tests ne peuvent pas couvrir)
 
@@ -61,7 +61,7 @@ Les tests automatiques tournent sur Chromium avec un profil d'iPhone et un faux 
 
 ## Comment ça marche (choix techniques)
 
-- **Lecture** : chaque MP3 est téléchargé en entier avec l'en-tête `Authorization` (une balise `<audio>` ne peut pas en envoyer), puis lu via une URL `blob:` locale. Safari iOS gère bien les blobs (déplacement dans la piste compris) ; une fois le fichier reçu, l'expiration du jeton ne coupe plus rien ; la même mécanique servira au hors ligne. Les pistes suivantes (2 d'avance) sont préchargées pendant la lecture ; seules précédente, courante et 3 suivantes sont gardées en mémoire, le reste est libéré. Cela convient à des MP3 de 10 à 30 Mo ; des fichiers de plusieurs centaines de Mo ne seraient pas adaptés.
+- **Lecture** : chaque MP3 est téléchargé en entier avec l'en-tête `Authorization` (une balise `<audio>` ne peut pas en envoyer), puis lu via une URL `blob:` locale. Safari iOS gère bien les blobs (déplacement dans la piste compris) ; une fois le fichier reçu, l'expiration du jeton ne coupe plus rien ; la même mécanique servira au hors ligne. Les pistes suivantes (2 d'avance) sont préchargées pendant la lecture ; seules précédente, courante et 2 suivantes sont gardées en mémoire, le reste est libéré. Cela convient à des MP3 de 10 à 30 Mo ; des fichiers de plusieurs centaines de Mo ne seraient pas adaptés.
 - **Un seul élément `<audio>`** est réutilisé et « activé » par le premier tap : sur iOS, c'est ce qui autorise la suite de la lecture (changement de piste, écran verrouillé).
 - **Connexion** : Google Identity Services (modèle « jeton », sans serveur) ; repli par redirection OAuth dans la même fenêtre si le pop-up est bloqué. Le jeton (1 h) est renouvelé 5 min avant son expiration ; en cas d'échec, un bandeau propose de se reconnecter et la piste en cours continue.
 - **Service worker** : ne met en cache que l'interface (HTML/CSS/JS/icônes). Il ignore Google et l'audio.
