@@ -1,141 +1,215 @@
-// PROTOTYPE (étape 1) : connexion Google + navigation dans le Drive + test de lecture d'un MP3 en blob.
-// Sert à vérifier sur iPhone, depuis l'écran d'accueil, que la connexion fonctionne.
 import './style.css';
-import { CLIENT_ID } from './config.js';
-import { consumeRedirectResult, getAuthState, isStandalone, onAuthChange, refreshSilently, signIn, signInRedirect, signOut } from './auth.js';
+import { CLIENT_ID, ROOT_FOLDER_NAME } from './config.js';
+import {
+  consumeRedirectResult, getAuthState, hasStoredSession, isStandalone, onAuthChange,
+  refreshSilently, signIn, signInRedirect, signOut,
+} from './auth.js';
 import { storage } from './storage/index.js';
+import { createPlayer, stripExt } from './player.js';
+import { mountPlayerUI, esc } from './ui.js';
+import { clearCache, collectTracks, forgetRoot, getRoot, list } from './library.js';
+import { store } from './store.js';
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
-const app = document.getElementById('app');
-const FOLDER_KEY = 'ld.rootFolder';
-const stack = []; // [{id,name}]
-let message = '';
-let isError = false;
+const view = document.getElementById('view');
+const banner = document.getElementById('banner');
+const player = createPlayer({ storage });
+mountPlayerUI({ player, mini: document.getElementById('mini'), sheet: document.getElementById('sheet') });
+
+let root = null;
+let stack = []; // [{id,name}] — le premier élément est toujours le dossier racine
 let listing = null;
-let nowPlaying = '';
-let audioEl = null;
+let busy = '';
+let message = '';
+let showSettings = false;
+let loginError = '';
 
-const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const fmtSize = (b) => (b ? (b / 1048576).toFixed(1) + ' Mo' : '');
 const mmss = (ms) => `${Math.floor(ms / 60000)} min ${String(Math.floor(ms / 1000) % 60).padStart(2, '0')} s`;
+const fmtSize = (b) => (b ? (b / 1048576).toFixed(1) + ' Mo' : '');
+const currentTrackId = () => player.current()?.id;
 
-function setMsg(m, err = false) { message = m; isError = err; render(); }
-
-function loadRoot() {
-  try { return JSON.parse(localStorage.getItem(FOLDER_KEY)); } catch { return null; }
-}
-
-async function openFolder(id, name, pushToStack = true) {
-  setMsg('Chargement…');
+// ---------- navigation ----------
+async function openFolder(path) {
+  busy = 'Chargement…'; message = ''; render();
   try {
-    listing = await storage.listChildren(id);
-    if (pushToStack) stack.push({ id, name });
-    setMsg('');
-  } catch (e) { setMsg('Erreur : ' + e.message, true); }
+    const last = path[path.length - 1];
+    listing = await list(last.id);
+    stack = path;
+    store.set('path', path.slice(1));
+  } catch (e) {
+    if (e.status === 404) { forgetRoot(); root = null; return start(); }
+    message = e.code ? 'Session Google expirée.' : 'Erreur de chargement : ' + e.message;
+  }
+  busy = '';
+  render();
 }
 
-async function goUp(index) {
-  stack.length = index + 1;
-  const f = stack[index];
-  stack.pop();
-  await openFolder(f.id, f.name);
-}
-
-async function testSilent() {
-  setMsg('Renouvellement silencieux…');
-  try { await refreshSilently(); setMsg('Renouvellement réussi ✔'); }
-  catch (e) { setMsg('Échec du renouvellement : ' + (e.code || e.message), true); }
-}
-
-async function playTrack(t) {
-  setMsg(`Téléchargement de « ${t.name} »…`);
-  const t0 = performance.now();
+async function start() {
+  busy = 'Recherche du dossier…'; render();
   try {
-    const blob = await storage.getBlob(t.id);
-    audioEl.src = URL.createObjectURL(blob);
-    await audioEl.play();
-    nowPlaying = t.name;
-    setMsg(`Lecture en cours — ${fmtSize(blob.size)} téléchargés en ${((performance.now() - t0) / 1000).toFixed(1)} s`);
-  } catch (e) { setMsg('Erreur lecture : ' + (e.message || e), true); }
+    root = await getRoot();
+  } catch (e) {
+    busy = ''; root = null; listing = null;
+    message = e.code === 'no_root' ? e.message + ' Crée-le dans Google Drive, puis touche « Actualiser ».' : 'Erreur : ' + e.message;
+    render();
+    return;
+  }
+  const sub = store.get('path', []);
+  const path = [root, ...(Array.isArray(sub) ? sub : [])];
+  await openFolder(path);
+  if (!listing && path.length > 1) await openFolder([root]); // dossier mémorisé disparu
+}
+
+async function playFolder({ shuffle }) {
+  const here = stack[stack.length - 1];
+  busy = 'Préparation de la lecture…'; render();
+  try {
+    const tracks = await collectTracks(here.id);
+    busy = '';
+    if (!tracks.length) { message = 'Aucun MP3 dans ce dossier.'; render(); return; }
+    render();
+    player.playQueue(tracks, shuffle ? Math.floor(Math.random() * tracks.length) : 0, { shuffle });
+  } catch (e) { busy = ''; message = 'Erreur : ' + e.message; render(); }
+}
+
+// ---------- affichage ----------
+function renderBanner() {
+  const st = getAuthState();
+  const needed = !st.signedIn && (hasStoredSession() || player.state.queue.length || listing);
+  if (!needed || !(listing || player.state.queue.length)) { banner.innerHTML = ''; return; }
+  banner.innerHTML = `<strong>Session Google expirée.</strong> La piste en cours continue, mais les suivantes ne pourront pas se charger.
+    <div class="row"><button class="primary" data-act="signin">Reconnecter</button><button data-act="redirect">Connexion alternative</button></div>
+    ${loginError ? `<div class="err">${esc(loginError)}</div>` : ''}`;
+}
+
+function renderLogin() {
+  const idMissing = CLIENT_ID.startsWith('VOTRE_');
+  return `<div class="center"><h1>Lecteur Drive</h1>
+    <p class="muted">Écoute les MP3 du dossier « ${esc(ROOT_FOLDER_NAME)} » de ton Google Drive.<br>Accès en lecture seule.</p>
+    ${idMissing ? '<p class="err">Identifiant client non configuré (src/config.js).</p>' : ''}
+    <div class="row" style="justify-content:center"><button class="primary" data-act="signin">Se connecter avec Google</button></div>
+    <div class="row" style="justify-content:center"><button data-act="redirect">Connexion alternative (même fenêtre)</button></div>
+    ${loginError ? `<p class="err">${esc(loginError)}</p>` : ''}</div>`;
+}
+
+function renderSettings() {
+  const st = getAuthState();
+  return `<div class="diag"><strong>Réglages</strong>
+    <div class="kv"><span>Mode app (écran d'accueil)</span><span>${isStandalone() ? 'oui' : 'non (Safari)'}</span></div>
+    <div class="kv"><span>Jeton Google expire dans</span><span id="remaining">${st.signedIn ? mmss(st.remainingMs) : 'expiré'}</span></div>
+    <div class="kv"><span>Dossier</span><span>${esc(ROOT_FOLDER_NAME)}</span></div>
+    <div class="row"><button data-act="refresh">Actualiser les dossiers</button><button data-act="renew">Tester le renouvellement</button><button data-act="signout">Se déconnecter</button></div></div>`;
 }
 
 function render() {
+  renderBanner();
   const st = getAuthState();
-  const idMissing = CLIENT_ID.startsWith('VOTRE_');
-  let html = '<h1>Lecteur Drive</h1>';
-  if (idMissing) html += '<p class="err">Identifiant client non configuré : voir <code>src/config.js</code> et le README.</p>';
-  if (!st.signedIn) {
-    html += `<p>Connecte-toi pour accéder à ton Drive (lecture seule).</p>
-      <div class="row"><button class="primary" data-act="signin">Se connecter avec Google</button>
-      <button data-act="redirect">Connexion alternative (même fenêtre)</button></div>`;
-  } else {
-    const crumbs = ['Mon Drive', ...stack.map((s) => s.name)].map(esc).join(' › ');
-    html += `<div class="row">
-      <button data-act="root">Mon Drive</button>
-      ${stack.length ? '<button data-act="up">⬆ Dossier parent</button>' : ''}
-      ${stack.length ? '<button data-act="setroot">Choisir comme racine</button>' : ''}
-    </div><div class="crumbs">${crumbs}</div>`;
-    if (listing) {
-      html += '<ul class="list">' +
-        listing.folders.map((f) => `<li><button data-folder="${esc(f.id)}" data-name="${esc(f.name)}">📁 ${esc(f.name)}</button></li>`).join('') +
-        listing.tracks.map((t) => `<li><button data-track="${esc(t.id)}" data-name="${esc(t.name)}">🎵 <span>${esc(t.name)}<br><span class="muted">${fmtSize(Number(t.size))}</span></span></button></li>`).join('') +
-        '</ul>';
-      if (!listing.folders.length && !listing.tracks.length) html += '<p class="muted">Dossier vide (ni sous-dossier ni MP3).</p>';
-    }
-    html += `<audio controls playsinline></audio>`;
+  if (!st.signedIn && !listing && !player.state.queue.length) { view.innerHTML = renderLogin(); return; }
+
+  let html = `<div class="top"><h1>${esc(ROOT_FOLDER_NAME)}</h1>
+    <button class="icon" data-act="settings" aria-label="Réglages" aria-expanded="${showSettings}"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:currentColor"><path d="M19.4 13a7.6 7.6 0 000-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 00-1.7-1L15 3.4h-4l-.4 2.6a7.4 7.4 0 00-1.7 1l-2.4-1-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 001.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 001.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" transform="translate(-1 0)"/></svg></button></div>`;
+  if (showSettings) html += renderSettings();
+
+  if (stack.length) {
+    const crumbs = stack.map((f, i) => (i === stack.length - 1 ? `<span>${esc(f.name)}</span>` : `<button data-crumb="${i}">${esc(f.name)}</button>`)).join(' › ');
+    html += `<div class="crumbs">${crumbs}</div>`;
   }
-  if (message) html += `<p class="${isError ? 'err' : ''}" role="status">${esc(message)}</p>`;
-  const root = loadRoot();
-  html += `<div class="diag"><strong>Diagnostic</strong>
-    <div><span>Mode app (écran d'accueil)</span><span>${isStandalone() ? 'oui' : 'non (Safari)'}</span></div>
-    <div><span>Connecté</span><span>${st.signedIn ? 'oui' : 'non'}</span></div>
-    <div><span>Jeton expire dans</span><span id="remaining">${st.signedIn ? mmss(st.remainingMs) : '—'}</span></div>
-    <div><span>Dossier racine</span><span>${root ? esc(root.name) : 'aucun'}</span></div>
-    ${nowPlaying ? `<div><span>Piste</span><span>${esc(nowPlaying)}</span></div>` : ''}
-    ${st.signedIn ? '<div class="row"><button data-act="silent">Tester le renouvellement</button><button data-act="signout">Se déconnecter</button></div>' : ''}
-  </div>`;
-  const keepSrc = audioEl && audioEl.src && !audioEl.ended ? audioEl : null;
-  app.innerHTML = html;
-  const fresh = app.querySelector('audio');
-  if (fresh) { if (keepSrc) fresh.replaceWith(keepSrc); audioEl = app.querySelector('audio'); }
+  if (listing) {
+    const has = listing.folders.length || listing.tracks.length;
+    html += `<div class="row">
+      <button class="primary" data-act="playfolder" ${has ? '' : 'disabled'}>▶ Lire le dossier</button>
+      <button data-act="shufflefolder" ${has ? '' : 'disabled'}>🔀 Aléatoire</button>
+      ${stack.length > 1 ? '<button data-act="up">⬆ Parent</button>' : ''}</div>`;
+    html += '<ul class="list">' +
+      listing.folders.map((f, i) => `<li><button data-folder="${i}"><span aria-hidden="true">📁</span><span class="name">${esc(f.name)}</span></button></li>`).join('') +
+      listing.tracks.map((t, i) => `<li class="${t.id === currentTrackId() ? 'current' : ''}"><button data-track="${i}"><span aria-hidden="true">${t.id === currentTrackId() ? '▶' : '🎵'}</span><span class="name">${esc(stripExt(t.name))}</span><span class="muted">${fmtSize(Number(t.size))}</span></button></li>`).join('') +
+      '</ul>';
+    if (!has) html += '<p class="muted">Dossier vide (ni sous-dossier ni MP3).</p>';
+  }
+  if (busy) html += `<p class="muted spin" role="status">${esc(busy)}</p>`;
+  if (message) html += `<p class="err" role="status">${esc(message)}</p>`;
+  if (!listing && !busy && !message && st.signedIn) html += '<p class="muted">…</p>';
+  if (message && !listing) html += '<div class="row"><button data-act="refresh">Actualiser</button><button data-act="signout">Se déconnecter</button></div>';
+  view.innerHTML = html;
 }
 
-app.addEventListener('click', async (ev) => {
-  const b = ev.target.closest('button');
+// ---------- événements ----------
+async function doSignIn() {
+  loginError = '';
+  try { await signIn(); loginError = ''; }
+  catch (e) { loginError = `Connexion impossible (${e.code || 'erreur'}) : ${e.message}. Essaie « Connexion alternative ».`; render(); }
+}
+
+document.addEventListener('click', async (ev) => {
+  const b = ev.target.closest('#app button');
   if (!b) return;
-  if (b.dataset.folder) return openFolder(b.dataset.folder, b.dataset.name);
-  if (b.dataset.track) return playTrack({ id: b.dataset.track, name: b.dataset.name });
-  switch (b.dataset.act) {
-    case 'signin':
-      try { setMsg('Ouverture de la fenêtre Google…'); await signIn(); await openRoot(); }
-      catch (e) { setMsg(`Connexion impossible (${e.code || ''}) : ${e.message}. Essaie « Connexion alternative ».`, true); }
-      break;
+  const d = b.dataset;
+  if (d.folder !== undefined) return openFolder([...stack, listing.folders[Number(d.folder)]]);
+  if (d.crumb !== undefined) return openFolder(stack.slice(0, Number(d.crumb) + 1));
+  if (d.track !== undefined) {
+    const i = Number(d.track);
+    if (player.state.queue === listing.tracks && player.current()?.id === listing.tracks[i].id) return player.toggle();
+    player.playQueue(listing.tracks, i, { shuffle: false });
+    return;
+  }
+  switch (d.act) {
+    case 'signin': await doSignIn(); break;
     case 'redirect': signInRedirect(); break;
-    case 'root': stack.length = 0; await openRoot(); break;
-    case 'up': stack.pop(); { const p = stack.pop(); if (p) await openFolder(p.id, p.name); else await openRoot(); } break;
-    case 'setroot': localStorage.setItem(FOLDER_KEY, JSON.stringify(stack[stack.length - 1])); setMsg('Dossier racine mémorisé ✔'); break;
-    case 'silent': await testSilent(); break;
-    case 'signout': signOut(); listing = null; stack.length = 0; render(); break;
+    case 'settings': showSettings = !showSettings; render(); break;
+    case 'playfolder': await playFolder({ shuffle: false }); break;
+    case 'shufflefolder': await playFolder({ shuffle: true }); break;
+    case 'up': openFolder(stack.slice(0, -1)); break;
+    case 'refresh': clearCache(); message = ''; await start(); break;
+    case 'renew':
+      message = 'Renouvellement…'; render();
+      try { await refreshSilently(); message = 'Renouvellement réussi ✔'; } catch (e) { message = 'Échec du renouvellement : ' + (e.code || e.message); }
+      render(); break;
+    case 'signout':
+      signOut(); player.clear(); forgetRoot(); store.del('path'); root = null; listing = null; stack = []; message = ''; showSettings = false; render(); break;
+    default:
   }
 });
 
-async function openRoot() {
-  const r = loadRoot();
-  stack.length = 0;
-  if (r) { await openFolder(r.id, r.name); } else { await openFolder('root', 'Mon Drive', false); }
-}
+let wasSignedIn = getAuthState().signedIn;
+onAuthChange((st) => {
+  renderBanner();
+  if (st.signedIn && !wasSignedIn) {
+    loginError = '';
+    renderBanner();
+    if (!listing) start();
+    player.retry();
+  }
+  wasSignedIn = st.signedIn;
+  if (!st.signedIn && !listing) render();
+});
 
-onAuthChange(() => { const el = document.getElementById('remaining'); if (!el) render(); });
+let lastLocalPlayStatus = '';
+player.on((s) => {
+  // redessine la liste seulement si la piste ou l'état « lecture » change (pour l'indicateur ▶)
+  const key = (currentTrackId() || '') + s.status;
+  if (key !== lastLocalPlayStatus) { lastLocalPlayStatus = key; if (listing) render(); }
+  if (s.status === 'error' && s.errorCode) renderBanner();
+});
+
 setInterval(() => {
   const el = document.getElementById('remaining');
+  if (!el) return;
   const st = getAuthState();
-  if (el && st.signedIn) el.textContent = mmss(st.remainingMs);
-  else if (el && !st.signedIn && el.textContent !== '—') render();
+  el.textContent = st.signedIn ? mmss(st.remainingMs) : 'expiré';
 }, 1000);
 
+// ---------- démarrage ----------
 consumeRedirectResult();
+wasSignedIn = getAuthState().signedIn;
+player.restore();
 render();
-if (getAuthState().signedIn) openRoot();
+if (getAuthState().signedIn) {
+  start();
+} else if (hasStoredSession()) {
+  // jeton expiré depuis la dernière ouverture : renouvellement discret (peut être refusé sans geste utilisateur)
+  busy = 'Reconnexion…'; render();
+  refreshSilently().then(() => { busy = ''; }, () => { busy = ''; render(); });
+}

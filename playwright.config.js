@@ -6,6 +6,6 @@ const { defaultBrowserType, ...iphone } = devices['iPhone 13'];
 
 export default defineConfig({
   testDir: 'tests',
-  use: { ...iphone, baseURL: 'http://localhost:4173', trace: 'off' },
+  use: { ...iphone, baseURL: 'http://localhost:4173', trace: 'off', launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] } },
   webServer: { command: 'npm run build && npm run preview', url: 'http://localhost:4173', reuseExistingServer: true, timeout: 60000 },
 });

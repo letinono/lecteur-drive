@@ -43,6 +43,9 @@ export function getAuthState() {
   return { signedIn: remaining > 0, remainingMs: Math.max(0, remaining) };
 }
 
+/** Vrai si un jeton a déjà été obtenu sur cet appareil (même expiré) : on tente alors un renouvellement discret. */
+export function hasStoredSession() { return token !== null; }
+
 export function isStandalone() {
   return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 }

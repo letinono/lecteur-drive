@@ -47,6 +47,15 @@ export const driveSource = {
     return { folders, tracks };
   },
 
+  /** Trouve un dossier par son nom directement sous `parentId` (par défaut la racine du Drive). */
+  async findFolder(name, parentId = 'root') {
+    const safe = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const q = `name='${safe}' and '${parentId}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
+    const params = new URLSearchParams({ q, pageSize: '5', fields: 'files(id,name)' });
+    const data = await (await authedFetch(`${API}?${params}`)).json();
+    return data.files[0] || null;
+  },
+
   async getMeta(id) {
     const res = await authedFetch(`${API}/${id}?fields=id,name,mimeType,size&supportsAllDrives=true`);
     return res.json();
